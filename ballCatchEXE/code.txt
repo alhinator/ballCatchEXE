@@ -1,0 +1,210 @@
+============================================================================
+Main.cs
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+
+public class Main : MonoBehaviour
+{
+    public int score;
+    
+    public Text m_scoreText;
+    public Text m_highScoreText;
+    public Text m_timeText;
+    public GameObject m_platform;
+    public GameObject m_ball;
+    public int m_numPlatforms =5;
+    private float timeCount;
+    public Button m_restart;
+    public float m_maxTime = 60;
+    
+    // Start is called before the first frame update
+    void Start()
+    {
+        //instantiates platforms
+        CreatePlatforms();
+        //resets time scale and timer countdown
+        Time.timeScale = 1;
+        timeCount = m_maxTime;
+        //adds listener to restart button
+        m_restart.onClick.AddListener(RestartGame);
+        //instantiates ball and sets maincam for reference
+        GameObject b = Instantiate(m_ball);
+        b.GetComponent<BallBehavior>().m_cam = (this.gameObject);
+        //gets highscore
+        m_highScoreText.text = "High Score = " + PlayerPrefs.GetInt("HighScore");
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //updates score
+        m_scoreText.text = "Score = " + score;
+        //subtracts and rounds time on timer
+        timeCount -= Time.deltaTime;
+        timeCount = Mathf.Round(timeCount*100)/100;
+        //print(m_timeCount);
+        //checks if time is up, and if it should set a new highscore
+        m_timeText.text = "Time = " + timeCount;
+        if (timeCount <= 0)
+        {
+            Time.timeScale = 0;
+            if (score > PlayerPrefs.GetInt("HighScore"))
+            {
+                m_highScoreText.text = "High Score = " + score;
+                PlayerPrefs.SetInt("HighScore", score);
+            }
+        }
+    }
+
+    public void CreatePlatforms()
+    {
+        for(int i = m_numPlatforms;i > 2; i--)
+
+        {
+            int m = 0;
+            while (m < 2)
+            {
+                //creates platform on the screen with random L/R translate, random rotate and scale
+                float xpos = Random.Range(-Camera.main.orthographicSize * Camera.main.aspect, Camera.main.orthographicSize * Camera.main.aspect);
+                float ypos = i * Camera.main.orthographicSize * 2 / (m_numPlatforms - 1) - Camera.main.orthographicSize * 1.2f;
+                var platformClone = Object.Instantiate(m_platform, new Vector3(xpos, ypos, 0), new Quaternion(0, 0, 0, 0));
+                platformClone.transform.Rotate(0, 0, Random.Range(-80, 80));
+                platformClone.transform.localScale = new Vector3(Random.Range(0.1f,0.3f), Random.Range(0.1f, 0.3f), 1);
+                m++;
+            } 
+            
+
+        }
+    }
+    public void DestroyPlatforms()
+    {
+        //removes all platforms
+        var gameObjects = GameObject.FindGameObjectsWithTag("platform");
+
+        for (var i = 0; i < gameObjects.Length; i++)
+        {
+            Destroy(gameObjects[i]);
+        }
+    }
+
+    public void RestartGame()
+    {
+        //reloads the scene
+        print("restart pressed");
+        SceneManager.LoadScene("SampleScene");
+    }
+}
+
+
+
+============================================================================
+BallBehavior.cs
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class BallBehavior : MonoBehaviour
+{
+    public GameObject m_cam;
+    // Start is called before the first frame update
+    void Start()
+    {
+        transform.position = new Vector3(Random.Range(-Camera.main.orthographicSize*Camera.main.aspect, Camera.main.orthographicSize * Camera.main.aspect), Camera.main.orthographicSize);
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (transform.position.y < -Camera.main.orthographicSize)
+        {
+            GetComponent<Rigidbody2D>().velocity = Vector3.zero;
+
+            transform.position = new Vector3(Random.Range(-Camera.main.orthographicSize * Camera.main.aspect, Camera.main.orthographicSize * Camera.main.aspect), Camera.main.orthographicSize);
+
+            //GetComponent<Rigidbody2D>().angularVelocity =0;
+
+        }
+        if (Input.GetKeyDown("r"))
+        {
+            Object.Instantiate(this.gameObject);
+            Object.Destroy(this.gameObject);
+        }
+    }
+
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        //print("incollenter");
+        if (collision.gameObject.tag == "cup")
+        {
+            //Object.Destroy(collision.gameObject);
+            Object.Instantiate(this.gameObject);
+            Object.Destroy(this.gameObject);
+            m_cam.GetComponent<Main>().score++;
+            m_cam.GetComponent<Main>().DestroyPlatforms();
+            m_cam.GetComponent<Main>().CreatePlatforms();
+
+
+        }
+    }
+}
+
+
+==================================================================================
+CupMove.cs
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CupMove : MonoBehaviour
+{
+    public float m_moveSpeed = 1;
+    public float m_mouseMultiplier = 1000;
+    // Start is called before the first frame update
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        moveCup();
+    }
+
+
+    private void moveCup()
+    {
+        /*
+         float xtrans = Input.GetAxis("Horizontal") * Time.deltaTime * m_moveSpeed;
+
+        if (transform.position.x < Camera.main.orthographicSize * Camera.main.aspect - transform.lossyScale.x/2 && transform.position.x > -Camera.main.orthographicSize * Camera.main.aspect + transform.lossyScale.x / 2)
+        {
+            transform.Translate(xtrans, 0, 0);
+        }
+        else if (transform.position.x >= Camera.main.orthographicSize * Camera.main.aspect - transform.lossyScale.x / 2 && xtrans <=0)
+        {
+            transform.Translate(xtrans, 0, 0);
+        }
+        else if (transform.position.x <= -Camera.main.orthographicSize * Camera.main.aspect + transform.lossyScale.x / 2 && xtrans >= 0)
+        {
+            transform.Translate(xtrans, 0, 0);
+        }
+        */
+
+        float mousePosX = Input.mousePosition.x;
+        if (Time.timeScale != 0)
+        {
+            transform.position = new Vector3((mousePosX - Screen.width / 2) / m_mouseMultiplier, transform.position.y, transform.position.z);
+        }
+    }
+}
+
+========================================================================================
+
