@@ -16,6 +16,9 @@ public class Main : MonoBehaviour
     public Text m_timeText;
     public GameObject m_platform;
     public GameObject m_ball;
+    public GameObject m_leftWall;
+    public GameObject m_rightWall;
+
     public int m_numPlatforms =5;
     private float timeCount;
     public Button m_restart;
@@ -58,6 +61,12 @@ public class Main : MonoBehaviour
                 PlayerPrefs.SetInt("HighScore", score);
             }
         }
+
+
+
+        m_leftWall.transform.position = new Vector3(-Camera.main.orthographicSize * Camera.main.aspect, m_leftWall.transform.position.y, m_leftWall.transform.position.z);
+        m_rightWall.transform.position = new Vector3(Camera.main.orthographicSize * Camera.main.aspect, m_rightWall.transform.position.y, m_rightWall.transform.position.z);
+
     }
 
     public void CreatePlatforms()
@@ -98,6 +107,7 @@ public class Main : MonoBehaviour
         SceneManager.LoadScene("SampleScene");
     }
 }
+
 
 
 
